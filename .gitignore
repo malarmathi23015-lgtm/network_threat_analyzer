@@ -1,0 +1,16 @@
+.env
+*.db
+*.sqlite
+database/*.db
+logs/
+*.log
+reports/csv/
+reports/pdf/
+ai_engine/models/*.pkl
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+.DS_Store
+.pytest_cache/

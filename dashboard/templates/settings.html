@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | Network Threat Analyzer</title>
+    <style>
+        :root { --bg-dark:#0a0e1a; --bg-card:#111827; --border:#1e2d45; --accent-cyan:#00d4ff; --accent-red:#e94560; --text-primary:#e0e6f0; --text-muted:#8892a4; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Courier New',monospace; background:var(--bg-dark); color:var(--text-primary); }
+        .navbar { background:var(--bg-card); border-bottom:1px solid var(--accent-red); padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:60px; }
+        .navbar-brand { color:var(--accent-cyan); font-size:18px; font-weight:bold; }
+        .nav-links a { color:var(--text-muted); text-decoration:none; padding:8px 16px; border-radius:6px; font-size:13px; }
+        .nav-links a:hover,.nav-links a.active { color:var(--accent-cyan); background:rgba(0,212,255,0.08); }
+        .container { padding:24px; max-width:800px; margin:0 auto; }
+        h1 { font-size:20px; color:var(--accent-cyan); margin-bottom:24px; }
+        .card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; margin-bottom:20px; overflow:hidden; }
+        .card-header { padding:14px 20px; border-bottom:1px solid var(--border); font-size:13px; color:var(--accent-cyan); text-transform:uppercase; letter-spacing:1px; }
+        .card-body { padding:20px; }
+        .setting-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; }
+        .setting-row:last-child { border-bottom:none; }
+        .setting-label { color:var(--text-primary); }
+        .setting-value { color:var(--accent-cyan); font-family:monospace; }
+        .note { background:rgba(0,212,255,0.05); border:1px solid rgba(0,212,255,0.2); border-radius:8px; padding:16px; font-size:12px; color:var(--text-muted); line-height:1.8; }
+        code { background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:3px; color:var(--accent-cyan); }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="navbar-brand">🛡 Threat Analyzer</div>
+    <div class="nav-links">
+        <a href="/">Dashboard</a><a href="/alerts">Alerts</a>
+        <a href="/reports">Reports</a><a href="/settings" class="active">Settings</a>
+    </div>
+</nav>
+<div class="container">
+    <h1>⚙ Settings Overview</h1>
+    <div class="note">
+        Settings are managed in <code>config/config.ini</code>.<br>
+        Edit that file and restart the analyzer to apply changes.<br>
+        Sensitive values (API keys) go in <code>.env</code> (never commit to Git!).
+    </div>
+    <br>
+    <div class="card">
+        <div class="card-header">Detection Thresholds</div>
+        <div class="card-body">
+            <div class="setting-row"><span class="setting-label">Port Scan Threshold</span><span class="setting-value">15 ports / 10s</span></div>
+            <div class="setting-row"><span class="setting-label">Brute Force Threshold</span><span class="setting-value">5 attempts / 60s</span></div>
+            <div class="setting-row"><span class="setting-label">ICMP Flood Threshold</span><span class="setting-value">100 pkts/s</span></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">AI Engine</div>
+        <div class="card-body" id="ai-settings">
+            <div class="setting-row"><span class="setting-label">Model Type</span><span class="setting-value">IsolationForest</span></div>
+            <div class="setting-row"><span class="setting-label">Min Training Samples</span><span class="setting-value">100</span></div>
+            <div class="setting-row"><span class="setting-label">Contamination Rate</span><span class="setting-value">5%</span></div>
+            <div class="setting-row"><span class="setting-label">Retrain Interval</span><span class="setting-value">30 min</span></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">API Status</div>
+        <div class="card-body" id="api-status">
+            <div class="setting-row"><span class="setting-label">AI Status</span><span class="setting-value" id="ai-stat">Loading...</span></div>
+            <div class="setting-row"><span class="setting-label">Packet Capture</span><span class="setting-value" id="cap-stat">Loading...</span></div>
+        </div>
+    </div>
+</div>
+<script>
+async function loadStatus() {
+    try {
+        const res = await fetch('/api/stats');
+        const data = (await res.json()).data || {};
+        document.getElementById('ai-stat').textContent = data.ai?.is_trained ? 'Trained & Active' : `Training (${data.ai?.training_samples || 0} samples)`;
+        document.getElementById('cap-stat').textContent = data.capture?.start_time ? 'Running' : 'Stopped';
+    } catch (e) {}
+}
+loadStatus();
+</script>
+</body>
+</html>

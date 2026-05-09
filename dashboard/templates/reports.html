@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports | Network Threat Analyzer</title>
+    <style>
+        :root { --bg-dark:#0a0e1a; --bg-card:#111827; --border:#1e2d45; --accent-cyan:#00d4ff; --accent-red:#e94560; --accent-green:#00ff88; --text-primary:#e0e6f0; --text-muted:#8892a4; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Courier New',monospace; background:var(--bg-dark); color:var(--text-primary); }
+        .navbar { background:var(--bg-card); border-bottom:1px solid var(--accent-red); padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:60px; }
+        .navbar-brand { color:var(--accent-cyan); font-size:18px; font-weight:bold; }
+        .nav-links a { color:var(--text-muted); text-decoration:none; padding:8px 16px; border-radius:6px; font-size:13px; }
+        .nav-links a:hover,.nav-links a.active { color:var(--accent-cyan); background:rgba(0,212,255,0.08); }
+        .container { padding:24px; max-width:900px; margin:0 auto; }
+        h1 { font-size:20px; color:var(--accent-cyan); margin-bottom:24px; }
+        .report-cards { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:32px; }
+        .report-card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:28px; text-align:center; }
+        .report-card h3 { color:var(--text-primary); margin-bottom:8px; font-size:16px; }
+        .report-card p { color:var(--text-muted); font-size:12px; margin-bottom:20px; line-height:1.6; }
+        .report-icon { font-size:48px; margin-bottom:16px; }
+        .btn { display:inline-block; padding:10px 24px; border-radius:6px; border:1px solid; font-size:12px; text-decoration:none; cursor:pointer; font-family:inherit; transition:all 0.2s; }
+        .btn-csv { border-color:var(--accent-green); color:var(--accent-green); background:rgba(0,255,136,0.08); }
+        .btn-csv:hover { background:rgba(0,255,136,0.18); }
+        .btn-pdf { border-color:var(--accent-red); color:var(--accent-red); background:rgba(233,69,96,0.08); }
+        .btn-pdf:hover { background:rgba(233,69,96,0.18); }
+        .section-title { font-size:14px; color:var(--accent-cyan); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+        .file-list { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+        .file-item { padding:12px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-size:12px; }
+        .file-item:last-child { border-bottom:none; }
+        .file-name { color:var(--accent-cyan); }
+        .empty { padding:32px; text-align:center; color:var(--text-muted); }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="navbar-brand">🛡 Threat Analyzer</div>
+    <div class="nav-links">
+        <a href="/">Dashboard</a><a href="/alerts">Alerts</a>
+        <a href="/reports" class="active">Reports</a><a href="/settings">Settings</a>
+    </div>
+</nav>
+<div class="container">
+    <h1>📄 Report Generation</h1>
+    <div class="report-cards">
+        <div class="report-card">
+            <div class="report-icon">📊</div>
+            <h3>CSV Report</h3>
+            <p>Export all alerts as a CSV spreadsheet. Compatible with Excel, LibreOffice Calc, and data analysis tools.</p>
+            <a href="/api/reports/generate/csv" class="btn btn-csv">⬇ Download CSV</a>
+        </div>
+        <div class="report-card">
+            <div class="report-icon">📋</div>
+            <h3>PDF Report</h3>
+            <p>Generate a professional formatted PDF report with executive summary, charts, and full alert listing.</p>
+            <a href="/api/reports/generate/pdf" class="btn btn-pdf">⬇ Download PDF</a>
+        </div>
+    </div>
+    <div class="section-title">Generated Reports</div>
+    <div class="file-list" id="file-list">
+        <div class="empty">Loading...</div>
+    </div>
+</div>
+<script>
+async function loadReports() {
+    const res = await fetch('/api/reports/list');
+    const data = await res.json();
+    const all = [
+        ...(data.csv || []).map(f => ({name: f, type: 'CSV', url: '#'})),
+        ...(data.pdf || []).map(f => ({name: f, type: 'PDF', url: '#'}))
+    ];
+    const el = document.getElementById('file-list');
+    if (!all.length) { el.innerHTML = '<div class="empty">No reports generated yet.</div>'; return; }
+    el.innerHTML = all.map(f => `
+        <div class="file-item">
+            <span class="file-name">${f.name}</span>
+            <span style="color:var(--text-muted)">${f.type}</span>
+        </div>`).join('');
+}
+loadReports();
+</script>
+</body>
+</html>

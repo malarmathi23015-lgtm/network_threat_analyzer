@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerts | Network Threat Analyzer</title>
+    <style>
+        :root {
+            --bg-dark: #0a0e1a; --bg-card: #111827; --border: #1e2d45;
+            --accent-cyan: #00d4ff; --accent-red: #e94560;
+            --text-primary: #e0e6f0; --text-muted: #8892a4;
+            --critical: #ff2d55; --high: #ff6b35; --medium: #ffd700; --low: #00d4ff;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Courier New', monospace; background: var(--bg-dark); color: var(--text-primary); }
+        .navbar { background: var(--bg-card); border-bottom: 1px solid var(--accent-red); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 60px; }
+        .navbar-brand { color: var(--accent-cyan); font-size: 18px; font-weight: bold; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; }
+        .nav-links a:hover, .nav-links a.active { color: var(--accent-cyan); background: rgba(0,212,255,0.08); }
+        .container { padding: 24px; max-width: 1400px; margin: 0 auto; }
+        h1 { font-size: 20px; color: var(--accent-cyan); margin-bottom: 20px; }
+
+        /* Filter bar */
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-btn { padding: 6px 16px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-muted); font-size: 12px; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+        .filter-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+        .filter-btn.active { background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan); font-weight: bold; }
+        .filter-btn.critical.active { background: var(--critical); border-color: var(--critical); }
+        .filter-btn.high.active { background: var(--high); border-color: var(--high); }
+        .filter-btn.medium.active { background: var(--medium); border-color: var(--medium); color: #000; }
+
+        /* Table */
+        .table-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        thead th { padding: 12px 16px; text-align: left; background: rgba(0,212,255,0.05); color: var(--accent-cyan); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); }
+        tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+        tbody tr:hover { background: rgba(255,255,255,0.02); }
+        tbody td { padding: 10px 16px; color: var(--text-primary); vertical-align: middle; }
+        .ip { font-family: monospace; color: var(--accent-cyan); }
+        .badge { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+        .badge-CRITICAL { background: rgba(255,45,85,0.2); color: var(--critical); }
+        .badge-HIGH     { background: rgba(255,107,53,0.2); color: var(--high); }
+        .badge-MEDIUM   { background: rgba(255,215,0,0.15); color: var(--medium); }
+        .badge-LOW      { background: rgba(0,212,255,0.1); color: var(--low); }
+        .desc-cell { max-width: 400px; color: var(--text-muted); }
+        .loading { padding: 48px; text-align: center; color: var(--text-muted); }
+        .count-badge { background: var(--accent-red); color: white; border-radius: 10px; padding: 2px 8px; font-size: 11px; margin-left: 8px; }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="navbar-brand">🛡 Threat Analyzer</div>
+    <div class="nav-links">
+        <a href="/">Dashboard</a>
+        <a href="/alerts" class="active">Alerts</a>
+        <a href="/reports">Reports</a>
+        <a href="/settings">Settings</a>
+    </div>
+</nav>
+
+<div class="container">
+    <h1>⚠ Security Alerts <span class="count-badge" id="total-count">0</span></h1>
+
+    <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterAlerts('ALL', this)">All</button>
+        <button class="filter-btn critical" onclick="filterAlerts('CRITICAL', this)">🔴 Critical</button>
+        <button class="filter-btn high" onclick="filterAlerts('HIGH', this)">🟠 High</button>
+        <button class="filter-btn medium" onclick="filterAlerts('MEDIUM', this)">🟡 Medium</button>
+        <button class="filter-btn" onclick="filterAlerts('LOW', this)">🔵 Low</button>
+    </div>
+
+    <div class="table-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Severity</th>
+                    <th>Type</th>
+                    <th>Source IP</th>
+                    <th>Protocol</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody id="alerts-tbody">
+                <tr><td colspan="6" class="loading">Loading alerts...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+let allAlerts = [];
+let currentFilter = 'ALL';
+
+async function loadAlerts() {
+    try {
+        const res = await fetch('/api/alerts');
+        const data = await res.json();
+        allAlerts = data.alerts || [];
+        document.getElementById('total-count').textContent = allAlerts.length;
+        renderTable(allAlerts);
+    } catch (e) {
+        document.getElementById('alerts-tbody').innerHTML =
+            '<tr><td colspan="6" class="loading">Error loading alerts.</td></tr>';
+    }
+}
+
+function renderTable(alerts) {
+    const tbody = document.getElementById('alerts-tbody');
+    if (!alerts.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="loading">No alerts found.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = alerts.map(a => `
+        <tr>
+            <td>${(a.timestamp || '').substring(0, 19)}</td>
+            <td><span class="badge badge-${a.severity}">${a.severity || 'LOW'}</span></td>
+            <td>${escapeHtml(a.alert_type || '')}</td>
+            <td class="ip">${a.source_ip || 'N/A'}</td>
+            <td>${a.protocol || 'N/A'}</td>
+            <td class="desc-cell">${escapeHtml((a.description || '').substring(0, 120))}</td>
+        </tr>
+    `).join('');
+}
+
+function filterAlerts(severity, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = severity;
+    const filtered = severity === 'ALL' ? allAlerts : allAlerts.filter(a => a.severity === severity);
+    renderTable(filtered);
+}
+
+function escapeHtml(t) {
+    return String(t || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+loadAlerts();
+setInterval(loadAlerts, 10000);
+</script>
+</body>
+</html>
