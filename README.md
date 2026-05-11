@@ -286,17 +286,6 @@ git push -u origin main
 
 ---
 
-## 🖼 Screenshot Ideas
-
-1. **Dashboard Overview** — Stat cards + live alert feed + protocol bars
-2. **Port Scan Alert** — Terminal showing port scan detection
-3. **Brute Force Alert** — Multiple failed SSH attempts detected
-4. **AI Training Progress** — Progress bar showing model training
-5. **PDF Report** — Generated professional report
-6. **Alert Detail Page** — Full table with severity filters
-
----
-
 ## ⚠ Troubleshooting
 
 | Problem | Solution |
