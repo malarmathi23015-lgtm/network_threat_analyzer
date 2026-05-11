@@ -309,12 +309,6 @@ git push -u origin main
 
 ---
 
-## 📜 License
-
-MIT License — Free to use, modify, and distribute.
-
----
-
 ## 🎓 Learning Resources
 
 - [Scapy Documentation](https://scapy.readthedocs.io/)
